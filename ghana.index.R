@@ -3,12 +3,11 @@
 #' Propose methodology to generate an index with EPMM Phase I indicators 
 #' as a proxy of health system performance for site selection
 #' 
-#' Compute indicator for GHANA
+#' Bergel E. (IECS), December 28, 2018
+#' bergel@gmail.com
 #' 
-#' 
-
-# install.packages(c("dplyr","ggplot2","ggcorrplot","devtools","psych" ,"GGally","boot","gtools","sjPlot","readr","descr"))
-
+  
+# Load Libraries
 library(dplyr)
 library(ggplot2)
 library(ggcorrplot)
@@ -17,141 +16,157 @@ library(psych)
 library(GGally)
 library(boot)
 library(gtools)
- library(sjPlot)
+library(sjPlot)
 library(readr)
 library(descr)
+library(xlsx)
 
-# load data
+##################################################################
+# R function to generate index
 
-df <- read_csv("data.ghana.by.region.csv")
+fx.IMHM.index <- function(df){ 
+      
+      # Transform to ZScores
+      df$MMRz     <-    as.numeric(scale(  df$MMR,  center = TRUE, scale = TRUE)  )
+      df$SBAz     <-    as.numeric(scale(  df$SBA,  center = TRUE, scale = TRUE) )
+      df$ANCz     <-    as.numeric(scale(  df$ANC, center = TRUE, scale = TRUE) )
+      df$PNCz     <-    as.numeric(scale(  df$PNC,  center = TRUE, scale = TRUE) )
 
+      # creating INDEX
 
-# var names?
-names(df)
+      df$index.4vars   <- df$ANCz +  df$PNCz +   df$SBAz - df$MMRz
+      df$index.4vars.z <- as.numeric(scale(  df$index.4vars, center = TRUE, scale = TRUE)  )
+       
+      df$index.3vars   <- df$ANCz +  df$PNCz +   df$SBAz  
+      df$index.3vars.z <- as.numeric(scale(  df$index.3vars, center = TRUE, scale = TRUE)  )
+      
+      df$index.MMR.z     <- df$MMRz   
+      
+      df$index.4vars.qrt <- as.integer(gtools::quantcut(df$index.4vars.z))
+      df$index.3vars.qrt <- as.integer(gtools::quantcut(df$index.3vars.z))
+      df$index.MMR.qrt   <- as.integer(gtools::quantcut(df$index.MMR.z)) 
+      
+      return(df) 
+}
 
-#[1] "NATIONAL" "REGION"   "ID" "MMR"      "ANC"      "SBA"      "PNC"   
+##################################################################
+# Ghana Region - by region index is only MMRz
+
+# Read Data
+df <- read_csv("data.ghana.by.region.csv") 
 
 # rename variables
-df <- dplyr::rename(  df,   ANC = ANC)
-df <- dplyr::rename(  df,   ID = DISTRICT)
+df <- dplyr::rename(  df,   ID = REGION)
+
+# Remove Ghana from database (not a region)
+df <- dplyr::filter(df, ID != 'Ghana')
+
+# RECODE 0 to NA (issue in Ghana by district)
+df[df == 0] <- NA
+
+# Generate Index
+df <- fx.IMHM.index(df)
 
 
+################################################################## 
+# Ghana Region -  Analysis
 
-# RECODE 0 to NA
- df[df == 0] <- NA
- 
- 
-# remove missing data
- df <- df[complete.cases(df),]
-
-
-# compute dataframe summary
-summary( dplyr::select(df, MMR , ANC ,  PNC  ,   SBA))
   
-# variable TRANSFORMATIONS
+#  export data and index
+df.ghana.by.region <-  df %>% 
+              dplyr::select(ID, index.MMR.qrt, MMR, ANC, SBA, PNC ) %>%
+              dplyr::arrange( index.MMR.qrt    ) 
+
+write.xlsx(df.ghana.by.region , "ghana.index.by.Region.xlsx")
+
+# Random selection
+
+df.sample <- df.ghana.by.region %>% 
+             dplyr::group_by(index.MMR.qrt) %>% sample_n(size = 1 )
+
  
-# df$MMR.sqr    <-    sqrt(df$MMR) 
-# df$SBA.cube   <-    df$SBA * df$SBA  * df$SBA 
-# 
-# df$PNC.sq     <-    df$PNC * df$PNC  
-# df$PNC.sq     <-    sqrt(df$PNC ) 
-# 
-# df$ANC.sq    <-    df$ANC * df$ANC 
-# df$ANC.sq    <-    sqrt(df$ANC ) 
+##################################################################
+# Ghana Distric -   ANC, PNC, SBA  
+#
+# ---> 1) Brong Ahafo
 
-# Transform to ZScores
-df$MMR     <-    as.numeric(scale(  df$MMR,  center = TRUE, scale = TRUE)  )
-df$SBA     <-    as.numeric(scale(  df$SBA,  center = TRUE, scale = TRUE) )
-df$ANC     <-    as.numeric(scale(  df$ANC, center = TRUE, scale = TRUE) )
-df$PNC     <-    as.numeric(scale(  df$PNC,  center = TRUE, scale = TRUE) )
 
-# summary after transfomations and ZScores
-summary( dplyr::select(df, MMR , ANC ,  PNC  ,   SBA))
+#Read data
+df <- read_csv("data.ghana.by.district.csv") 
+
+# Select regions (from first level selection by Region )  c("Brong Ahafo",  "Northern")
+
+df   <-  df  %>% dplyr::filter( REGION  == "Brong Ahafo"  )         
+
+# rename variables
+df <- dplyr::rename(  df,   ID = DISTRICT) 
+
+ # RECODE 0 to NA (issue in Ghana by district)
+df[df == 0] <- NA
+
+# Generate Index
+df <- fx.IMHM.index(df)
+
+
+################################################################## 
+# Ghana District -  Analysis
+#
+# ---> 1) Brong Ahafo
+
+#  export data and index
+df.ghana.by.district.Brong_Ahafo <-  df %>% 
+              dplyr::select(REGION, ID,  index.3vars.qrt, MMR, ANC, SBA, PNC ) %>%
+              dplyr::arrange(  index.3vars.qrt    ) 
+
+write.csv(df.ghana.by.district.Brong_Ahafo , "df.ghana.by.district.Brong_Ahafo.csv")
+
+# Random selection
+
+df.sample <- df.ghana.by.district.Brong_Ahafo %>% 
+             dplyr::group_by(index.3vars.qrt) %>% sample_n(size = 1 )
+
  
-# compute correlation matrix
-df.CM           <- dplyr::select(df, MMR,           ANC,          PNC,          SBA           ) 
-df.CM.noMMR     <- dplyr::select(df,                ANC,          PNC,          SBA           )
 
-# remove missing values in dataframe
-df.CM        <- df.CM  [complete.cases(df.CM  ), ]
-df.CM.noMMR  <- df.CM.noMMR[complete.cases(df.CM2.noMMR), ]
+##################################################################
+# Ghana Distric -   ANC, PNC, SBA  
+#
+# ---> 2) "Northern"
 
-# plot correlation matrix
-ggpairs(df.CM)
-ggpairs(df.CM.noMMR)
+
+#Read data
+df <- read_csv("data.ghana.by.district.csv") 
+
+# Select regions (from first level selection by Region )  c("Brong Ahafo",  "Northern")
+
+df   <-  df  %>% dplyr::filter( REGION  == "Northern"  )         
+
+# rename variables
+df <- dplyr::rename(  df,   ID = DISTRICT) 
+
+ # RECODE 0 to NA (issue in Ghana by district)
+df[df == 0] <- NA
+
+# Generate Index
+df <- fx.IMHM.index(df)
+
+
+################################################################## 
+# Ghana District -  Analysis
+#
+# ---> 2) Northern
+
+#  export data and index
+df.ghana.by.district.Northern <-  df %>% 
+              dplyr::select(REGION, ID,  index.3vars.qrt, MMR, ANC, SBA, PNC ) %>%
+              dplyr::arrange(  index.3vars.qrt    ) 
+
+write.csv(df.ghana.by.district.Northern , "df.ghana.by.district.Northern.csv")
+
+# Random selection
+df.sample <- df.ghana.by.district.Northern %>% 
+             dplyr::group_by(index.3vars.qrt) %>% sample_n(size = 1 )
+
  
-
-# factor analysis 
-
-  # all vars
-cormat <- cor(df.CM)
-cormat
-factors_data <- fa(r = cormat, nfactors = 3)
-factors_data
-
-
-  # excluding MMR
-cormat <- cor(df.CM.noMMR)
-cormat
-factors_data <- fa(r = cormat, nfactors = 2)
-factors_data
-
-
-
-#principal components analysis
-
-  #all vars
-fit <- princomp(df.CM, cor=TRUE)
-summary(fit) # print variance accounted for 
-loadings(fit) # pc loadings 
-plot(fit,type="lines") # scree plot 
-fit$scores # the principal components
-biplot(fit)
-
-  #without MMR
-fit <- princomp(df.CM.noMMR, cor=TRUE)
-summary(fit) # print variance accounted for 
-loadings(fit) # pc loadings 
-plot(fit,type="lines") # scree plot 
-fit$scores # the principal components
-biplot(fit)
-
-
-
-
-# creating INDEX
-
-d<- df.CM
-
-index.4vars   <- d$ANC +  d$PNC +   d$SBA - d$MMR
-index.4vars.z <- as.numeric(scale(  index.4vars, center = TRUE, scale = TRUE)  )
- 
-index.3vars   <- d$ANC +  d$PNC +   d$SBA  
-index.3vars.z <- as.numeric(scale(  index.3vars, center = TRUE, scale = TRUE)  )
-
-d<- data.frame(index.3vars.z, index.4vars.z )
-
-ggpairs(d)
-
-index.4vars.qrt <- as.integer(gtools::quantcut(index.4vars.z))
-index.3vars.qrt <- as.integer(gtools::quantcut(index.3vars.z))
- 
-df.index <- dplyr::select(df,  ID, MMR, ANC, SBA, PNC)
-df.index        <- df.index  [complete.cases(df.index  ), ]
-df.index['index.4vars'] <-  index.4vars.z
-df.index['index.4vars'] <-  index.3vars.z
-df.index['index.4vars.qrt'] <-  index.4vars.qrt
-df.index['index.4vars.qrt'] <-  index.3vars.qrt
-
-dplyr::filter(df.index,  index.4vars.qrt ==1)$ID
-dplyr::filter(df.index,  index.4vars.qrt ==2)$ID 
-dplyr::filter(df.index,  index.4vars.qrt ==3)$ID
-dplyr::filter(df.index,  index.4vars.qrt ==4)$ID
-
-# export data and index
-library(xlsx)
-write.xlsx(df.index, "index.xlsx")
-
 
 
 
