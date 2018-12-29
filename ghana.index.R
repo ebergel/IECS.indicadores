@@ -22,18 +22,18 @@ library(readr)
 library(descr)
 
 # load data
-df <- read_csv("data.ghana.by.District.csv")
-df <- read_csv("data.ghana.by.District.csv")
-data.ghana.by.region.csv
+
+df <- read_csv("data.ghana.by.region.csv")
+
 
 # var names?
 names(df)
 
-#[1] "NATIONAL" "REGION"   "District" "MMR"      "ANC"      "SBA"      "PNC"   
+#[1] "NATIONAL" "REGION"   "ID" "MMR"      "ANC"      "SBA"      "PNC"   
 
 # rename variables
-df <- dplyr::rename(  df,   ANC4 = ANC)
-df <- dplyr::rename(  df,   District = DISTRICT)
+df <- dplyr::rename(  df,   ANC = ANC)
+df <- dplyr::rename(  df,   ID = DISTRICT)
 
 
 
@@ -42,12 +42,11 @@ df <- dplyr::rename(  df,   District = DISTRICT)
  
  
 # remove missing data
-# df <- df[complete.cases(df),]
+ df <- df[complete.cases(df),]
 
 
 # compute dataframe summary
-
-summary( dplyr::select(df, MMR , ANC4 ,  PNC  ,   SBA))
+summary( dplyr::select(df, MMR , ANC ,  PNC  ,   SBA))
   
 # variable TRANSFORMATIONS
  
@@ -57,22 +56,21 @@ summary( dplyr::select(df, MMR , ANC4 ,  PNC  ,   SBA))
 # df$PNC.sq     <-    df$PNC * df$PNC  
 # df$PNC.sq     <-    sqrt(df$PNC ) 
 # 
-# df$ANC4.sq    <-    df$ANC4 * df$ANC4 
-# df$ANC4.sq    <-    sqrt(df$ANC4 ) 
+# df$ANC.sq    <-    df$ANC * df$ANC 
+# df$ANC.sq    <-    sqrt(df$ANC ) 
 
 # Transform to ZScores
 df$MMR     <-    as.numeric(scale(  df$MMR,  center = TRUE, scale = TRUE)  )
 df$SBA     <-    as.numeric(scale(  df$SBA,  center = TRUE, scale = TRUE) )
-df$ANC4    <-    as.numeric(scale(  df$ANC4, center = TRUE, scale = TRUE) )
+df$ANC     <-    as.numeric(scale(  df$ANC, center = TRUE, scale = TRUE) )
 df$PNC     <-    as.numeric(scale(  df$PNC,  center = TRUE, scale = TRUE) )
 
 # summary after transfomations and ZScores
-summary( dplyr::select(df, MMR , ANC4 ,  PNC  ,   SBA))
+summary( dplyr::select(df, MMR , ANC ,  PNC  ,   SBA))
  
 # compute correlation matrix
-df.CM           <- dplyr::select(df, MMR,           ANC4,          PNC,          SBA           ) 
-df.CM.noMMR     <- dplyr::select(df,                ANC4,          PNC,          SBA           )
- 
+df.CM           <- dplyr::select(df, MMR,           ANC,          PNC,          SBA           ) 
+df.CM.noMMR     <- dplyr::select(df,                ANC,          PNC,          SBA           )
 
 # remove missing values in dataframe
 df.CM        <- df.CM  [complete.cases(df.CM  ), ]
@@ -125,10 +123,10 @@ biplot(fit)
 
 d<- df.CM
 
-index.4vars   <- d$ANC4 +  d$PNC +   d$SBA - d$MMR
+index.4vars   <- d$ANC +  d$PNC +   d$SBA - d$MMR
 index.4vars.z <- as.numeric(scale(  index.4vars, center = TRUE, scale = TRUE)  )
  
-index.3vars   <- d$ANC4 +  d$PNC +   d$SBA  
+index.3vars   <- d$ANC +  d$PNC +   d$SBA  
 index.3vars.z <- as.numeric(scale(  index.3vars, center = TRUE, scale = TRUE)  )
 
 d<- data.frame(index.3vars.z, index.4vars.z )
@@ -138,17 +136,17 @@ ggpairs(d)
 index.4vars.qrt <- as.integer(gtools::quantcut(index.4vars.z))
 index.3vars.qrt <- as.integer(gtools::quantcut(index.3vars.z))
  
-df.index <- dplyr::select(df,  District, MMR, ANC4, SBA, PNC)
+df.index <- dplyr::select(df,  ID, MMR, ANC, SBA, PNC)
 df.index        <- df.index  [complete.cases(df.index  ), ]
 df.index['index.4vars'] <-  index.4vars.z
 df.index['index.4vars'] <-  index.3vars.z
 df.index['index.4vars.qrt'] <-  index.4vars.qrt
 df.index['index.4vars.qrt'] <-  index.3vars.qrt
 
-dplyr::filter(df.index,  index.4vars.qrt ==1)$District
-dplyr::filter(df.index,  index.4vars.qrt ==2)$District 
-dplyr::filter(df.index,  index.4vars.qrt ==3)$District
-dplyr::filter(df.index,  index.4vars.qrt ==4)$District
+dplyr::filter(df.index,  index.4vars.qrt ==1)$ID
+dplyr::filter(df.index,  index.4vars.qrt ==2)$ID 
+dplyr::filter(df.index,  index.4vars.qrt ==3)$ID
+dplyr::filter(df.index,  index.4vars.qrt ==4)$ID
 
 # export data and index
 library(xlsx)
