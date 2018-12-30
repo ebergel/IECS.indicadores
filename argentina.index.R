@@ -148,7 +148,10 @@ df.Argentina.index.by.region         <- dplyr::select(df, ID, MMR,   ANC ,  UAB,
  
 write.csv(df.Argentina.index.by.region , "Argentina.index.by.region.csv")
 
-  
+# Random selection
+
+df.sample <- df.Argentina.index.by.region %>% 
+             dplyr::group_by(index.w.qrt) %>% sample_n(size = 1 )
 
 ################################################################## 
 # Argentina State -  Analysis - Region: Centro
@@ -178,7 +181,11 @@ df.Argentina.index.CENTRO        <- dplyr::select(df, ID, MMR,   ANC ,  UAB, ind
  
 write.csv(df.Argentina.index.CENTRO , "Argentina.index.CENTRO.csv")
 
-##################################################################   
+# Random selection
+
+df.sample <- df.Argentina.index.CENTRO %>% 
+             dplyr::group_by(index.w.qrt) %>% sample_n(size = 1 )
+
 
 ################################################################## 
 # Argentina State -  Analysis - Region: Noroeste
@@ -208,4 +215,11 @@ df.Argentina.index.Noroeste        <- dplyr::select(df, ID, MMR,   ANC ,  UAB, i
  
 write.csv(df.Argentina.index.Noroeste , "Argentina.index.Noroeste.csv")
 
-##################################################################  
+# Random selection
+
+df.sample <- df.Argentina.index.Noroeste %>% 
+             dplyr::group_by(index.w.qrt) %>% sample_n(size = 1 )
+
+
+
+
